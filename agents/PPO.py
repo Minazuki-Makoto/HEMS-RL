@@ -1,4 +1,3 @@
-from Env import env
 import numpy as np
 import torch
 import torch.nn as nn
@@ -70,17 +69,15 @@ class PPO_Agent():
 
         return actions.squeeze(0).detach().cpu().numpy(), log_probs.squeeze(0).detach()
 
-
-    def compute_advatage(self,values,next_values,reward,done,lamda=0.95):
-        adv=torch.zeros_like(reward)
-        lenth=reward.shape[0]
-        res=0
-        for i in range(lenth-1,-1,-1):
-            delta=reward[i]+(1-done[i])*self.gamma*next_values[i]-values[i]
-            res=self.gamma*lamda*res+delta
-            adv[i]=res
+    def compute_advatage(self, values, next_values, reward, done, lamda=0.95):
+        adv = torch.zeros_like(reward)
+        lenth = reward.shape[0]
+        res = 0
+        for i in range(lenth - 1, -1, -1):
+            delta = reward[i] + (1 - done[i]) * self.gamma * next_values[i] - values[i]
+            res = self.gamma * lamda * res + delta
+            adv[i] = res
         return adv
-
     def update(self, states, actions, rewards, next_states, dones, old_log_probs):
         states=np.array(states)
         next_states=np.array(next_states)
@@ -105,9 +102,10 @@ class PPO_Agent():
             self.critic_optimizer.step()
 
             # ===== advantage =====
-            adv = self.compute_advatage(values,next_values,rewards,dones)
+            adv = self.compute_advatage(values, next_values, rewards, dones)
             adv = (adv - adv.mean()) / (adv.std() + 1e-8)
             adv=adv.detach()
+            
             # ===== actor =====
             mu, std = self.actor_net(state)
             new_log_probs = []
