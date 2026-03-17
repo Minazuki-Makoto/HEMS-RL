@@ -19,6 +19,7 @@ def smooth_curve(data, window=20):
     smoothed = np.convolve(data, np.ones(window)/window, mode='valid')
     return smoothed
 
+device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 if __name__ == '__main__':
     t=12
@@ -39,11 +40,11 @@ if __name__ == '__main__':
     con_load_Humid_set=0.3
     HVAC_p_set=2.0
     T_best=24
-    HVAC_ws=0.05
-    alpha=0.05
+    HVAC_ws= 0.15
+    alpha=9
     beta=0.85
-    error=1.5
-    loss=0.03
+    error=2
+    loss= 2
     P_set=7.5
     energy_eta=0.95
     t_get=8
@@ -68,10 +69,11 @@ if __name__ == '__main__':
 
     a=0.2
     batch_size=40
+    batch_size_ddpg=64
     buffer_size=10000
     history_rewards=[]
 
-    noise_std=0.0025
+    noise_std=0.01
     SEED=40
     random.seed(SEED)
     np.random.seed(SEED)
@@ -100,13 +102,13 @@ if __name__ == '__main__':
 
     agent=PPO_Agent(state_dim,hidden_dim,action_dim,eps,gamma)
     sac_agent=SAC_Agent(state_dim,hidden_dim,action_dim,gamma,tau,a,buffer_size,batch_size)
-    Ddpg_agent=ddpg_agent(state_dim,hidden_dim,action_dim,gamma,noise_std,tau,buffer_size,batch_size)
+    Ddpg_agent=ddpg_agent(state_dim,hidden_dim,action_dim,gamma,noise_std,tau,buffer_size,batch_size_ddpg)
 
     action_history=[]
     action_sac_history=[]
     history_rewards_sac=[]
     history_rewards_ddpg=[]
-    for alt in range(16000):
+    for alt in range(8000):
         state_primary=environment.reset()
         state_sac_primary=environmentsac.reset()
         state_ddpg_primary=environmentddpg.reset()
@@ -149,20 +151,19 @@ if __name__ == '__main__':
 
             sac_agent.update()
             sac_agent.soft_update()
+            Ddpg_agent.update()
 
         action_history.append(action_all.copy())
         history_rewards .append(rewards)
         history_rewards_sac.append(rewards_sac)
         history_rewards_ddpg.append(rewards_ddpg)
         action_sac_history.append(action_all_sac)
-        Ddpg_agent.update()
         agent.update(states, action_all, reward_all, next_state_all, dones, prob_sums)
 
-        if alt % 1000 == 0 :
+        if alt % 500 == 0 :
             print(f'第{alt}次迭代完成，PPO得到的回报为{rewards*50}')
             print(f'SAC算法得到的回报为{rewards_sac*50}')
             print(f'DDPG算法得到的回报为{rewards_ddpg*50}')
-
 
         action_all.clear()
         states.clear()
