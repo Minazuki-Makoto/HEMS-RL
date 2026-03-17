@@ -135,15 +135,16 @@ class env():
         hour=t % 24
         T_out=self.T_t(hour)
         u=(action+1)/2.0
-        P_out = u * self.HVAC_p_set
+        if 8<= hour <=23:
+            P_out = u * self.HVAC_p_set
+        else:
+            P_out=0
         self.T_primary=self.T_primary*self.beta+(1-self.beta)*(T_out-self.alpha*P_out)
         T_in=self.T_primary
-        if 8 <= hour <= 23 and abs(self.T_primary-self.T_best)<=self.error:
-            rewards = -self.HVAC_ws*(self.T_primary-self.T_best)**2.0
-        elif 8 <= hour <= 23 and abs(self.T_primary-self.T_best)>self.error:
-            rewards = -(self.HVAC_ws)*(self.T_primary-self.T_best)**2.0-self.loss
+        if  abs(self.T_primary-self.T_best)<=self.error:
+            rewards = -self.HVAC_ws*(self.T_primary-self.T_best)
         else:
-            rewards= -0.5*(P_out)
+            rewards = -(self.HVAC_ws)*(self.T_primary-self.T_best)-self.loss
         return rewards,P_out,T_in
 
     def  EV(self,t,action):
